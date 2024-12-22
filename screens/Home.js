@@ -8,7 +8,7 @@ import {
   StatusBar,
   Alert,
   Image,
-  Pressable
+  Pressable,
 } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 import debounce from 'lodash.debounce';
@@ -33,22 +33,27 @@ const Item = ({ name, price, description, image }) => (
       <Text style={styles.description}>{description}</Text>
       <Text style={styles.price}>${price}</Text>
     </View>
-      <Image style={styles.itemImage} source={{uri: `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${image}?raw=true`}}/>
+    <Image
+      style={styles.itemImage}
+      source={{
+        uri: `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${image}?raw=true`,
+      }}
+    />
   </View>
 );
 
-const Home = ({navigation}) => {
-    const [profile, setProfile] = useState({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phoneNumber: "",
-        orderStatuses: false,
-        passwordChanges: false,
-        specialOffers: false,
-        newsletter: false,
-        image: "",
-      });
+const Home = ({ navigation }) => {
+  const [profile, setProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    orderStatuses: false,
+    passwordChanges: false,
+    specialOffers: false,
+    newsletter: false,
+    image: '',
+  });
   const [data, setData] = useState([]);
   const [searchBarText, setSearchBarText] = useState('');
   const [query, setQuery] = useState('');
@@ -56,62 +61,58 @@ const Home = ({navigation}) => {
     sections.map(() => false)
   );
 
-  const fetchData = async() => {
+  const fetchData = async () => {
     try {
       const response = await fetch(API_URL);
       const json = await response.json();
-      const menu = json.menu.map((item, index) => ({
-        id: index+1,
+      return json.menu.map((item, index) => ({
+        id: index + 1,
         name: item.name,
         price: item.price.toString(),
         description: item.description,
         image: item.image,
-        category: item.category
+        category: item.category,
       }));
-      return menu;
     } catch (error) {
-      console.error(error);
-    } finally {
+      console.error('Error fetching data:', error);
+      Alert.alert('Failed to fetch data. Please try again later.');
     }
-  }
+  };
+
+  const initializeData = async () => {
+    try {
+      await createTable();
+      let menuItems = await getMenuItems();
+
+      if (!menuItems.length) {
+        menuItems = await fetchData();
+        await saveMenuItems(menuItems);
+      }
+
+      setData(getSectionListData(menuItems));
+
+      const storedProfile = await AsyncStorage.getItem('profile');
+      if (storedProfile) setProfile(JSON.parse(storedProfile));
+    } catch (e) {
+      Alert.alert('Error initializing data:', e.message);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      let menuItems = []
-      try {
-        await createTable();
-        menuItems = await getMenuItems();
-        if (!menuItems.length) {
-          menuItems = await fetchData();
-          saveMenuItems(menuItems);
-        }
-        const sectionListData = getSectionListData(menuItems);
-        setData(sectionListData);
-        const getProfile = await AsyncStorage.getItem('profile');
-        setProfile(JSON.parse(getProfile))
-      } catch (e) {
-        Alert.alert(e.message);
-      }
-    })();
+    initializeData();
   }, []);
 
   useUpdateEffect(() => {
     (async () => {
-      const activeCategories = sections.filter((s, i) => {
-        if (filterSelections.every((item) => item === false)) {
-          return true;
-        }
-        return filterSelections[i];
-      });
+      const activeCategories = sections.filter((_, i) =>
+        filterSelections.every((item) => !item) || filterSelections[i]
+      );
+
       try {
-        const menuItems = await filterByQueryAndCategories(
-          query,
-          activeCategories
-        );
-        const sectionListData = getSectionListData(menuItems);
-        setData(sectionListData);
+        const menuItems = await filterByQueryAndCategories(query, activeCategories);
+        setData(getSectionListData(menuItems));
       } catch (e) {
-        Alert.alert(e.message);
+        Alert.alert('Error updating filters:', e.message);
       }
     })();
   }, [filterSelections, query]);
@@ -127,63 +128,93 @@ const Home = ({navigation}) => {
     debouncedLookup(text);
   };
 
-  const handleFiltersChange = async (index) => {
-    const arrayCopy = [...filterSelections];
-    arrayCopy[index] = !filterSelections[index];
-    setFilterSelections(arrayCopy);
+  const handleFiltersChange = (index) => {
+    setFilterSelections((prevSelections) => {
+      const updatedSelections = [...prevSelections];
+      updatedSelections[index] = !prevSelections[index];
+      return updatedSelections;
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#dee3e9" />
+
       <View style={styles.header}>
         <Image
           style={styles.logo}
-          source={require("../img/littleLemonLogo.png")}
+          source={require('../img/littleLemonLogo.png')}
           accessible={true}
-          accessibilityLabel={"Little Lemon Logo"}
+          accessibilityLabel="Little Lemon Logo"
         />
-        <Pressable style={styles.avatar} onPress={() => navigation.navigate('Profile')}>
-        {profile.image ? <Image source={{ uri: profile.image }} style={styles.avatarImage} /> : <View style={styles.avatarEmpty}><Text style={styles.avatarEmptyText}>{profile.firstName && Array.from(profile.firstName)[0]}{profile.lastName && Array.from(profile.lastName)[0]}</Text></View>}
+        <Pressable
+          style={styles.avatar}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          {profile.image ? (
+            <Image
+              source={{ uri: profile.image }}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <View style={styles.avatarEmpty}>
+              <Text style={styles.avatarEmptyText}>
+                {profile.firstName[0]}{profile.lastName[0]}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
+
       <View style={styles.heroSection}>
         <Text style={styles.heroHeader}>Little Lemon</Text>
         <View style={styles.heroBody}>
-            <View style={styles.heroContent}>
-                <Text style={styles.heroHeader2}>Chicago</Text>
-                <Text style={styles.heroText}>We are a family owned Mediterranean restaurant, focused on traditional recipes served with a
-modern twist.</Text>
-            </View>
-            <Image
-                style={styles.heroImage}
-                source={require("../img/restauranfood.png")}
-                accessible={true}
-                accessibilityLabel={"Little Lemon Food"}
-                />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroHeader2}>Chicago</Text>
+            <Text style={styles.heroText}>
+              We are a family owned Mediterranean restaurant, focused on
+              traditional recipes served with a modern twist.
+            </Text>
+          </View>
+          <Image
+            style={styles.heroImage}
+            source={require('../img/restauranfood.png')}
+            accessible={true}
+            accessibilityLabel="Little Lemon Food"
+          />
         </View>
+
         <Searchbar
-            placeholder="Search"
-            placeholderTextColor="#333333"
-            onChangeText={handleSearchChange}
-            value={searchBarText}
-            style={styles.searchBar}
-            iconColor="#333333"
-            inputStyle={{ color: '#333333' }}
-            elevation={0}
+          placeholder="Search"
+          placeholderTextColor="#333333"
+          onChangeText={handleSearchChange}
+          value={searchBarText}
+          style={styles.searchBar}
+          iconColor="#333333"
+          inputStyle={{ color: '#333333' }}
+          elevation={0}
         />
       </View>
+
       <Text style={styles.delivery}>ORDER FOR DELIVERY!</Text>
+
       <Filters
         selections={filterSelections}
         onChange={handleFiltersChange}
         sections={sections}
       />
+
       <SectionList
         style={styles.sectionList}
         sections={data}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Item name={item.name} price={item.price} description={item.description} image={item.image} />
+          <Item
+            name={item.name}
+            price={item.price}
+            description={item.description}
+            image={item.image}
+          />
         )}
         renderSectionHeader={({ section: { name } }) => (
           <Text style={styles.itemHeader}>{name}</Text>
@@ -191,7 +222,7 @@ modern twist.</Text>
       />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -200,14 +231,14 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    backgroundColor: "#dee3e9",
+    flexDirection: 'row',
+    justifyContent: 'center',
+    backgroundColor: '#dee3e9',
   },
   logo: {
     height: 50,
     width: 150,
-    resizeMode: "contain",
+    resizeMode: 'contain',
   },
   sectionList: {
     paddingHorizontal: 16,
@@ -233,7 +264,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     paddingVertical: 8,
     color: '#495e57',
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
   },
   name: {
     fontSize: 20,
@@ -269,8 +300,13 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     backgroundColor: '#0b9a6a',
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmptyText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   heroSection: {
     backgroundColor: '#495e57',
@@ -286,7 +322,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   heroText: {
-    color: '#fff'
+    color: '#fff',
   },
   heroBody: {
     flexDirection: 'row',
@@ -304,7 +340,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     padding: 15,
-  }
+  },
 });
 
 export default Home;
