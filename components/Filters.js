@@ -1,26 +1,28 @@
+import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-const Filters = ({ onChange, selections, sections }) => {
+const Filters = ({ onChange, selections = [], sections = [] }) => {
+  const getButtonStyle = (isSelected) => ({
+    backgroundColor: isSelected ? '#495e57' : '#edefee',
+  });
+
+  const getTextStyle = (isSelected) => ({
+    color: isSelected ? '#edefee' : '#495e57',
+  });
+
   return (
     <View style={styles.filtersContainer}>
       {sections.map((section, index) => (
         <TouchableOpacity
-          key={index}
-          onPress={() => {
-            onChange(index);
-          }}
-          style={{
-            flex: 1 / sections.length,
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 16,
-            backgroundColor: selections[index] ? '#495e57' : '#edefee',
-            borderRadius: 9,
-            marginRight: 15,
-          }}>
+          key={section} 
+          onPress={() => onChange(index)}
+          style={[
+            styles.button,
+            getButtonStyle(selections[index]),
+          ]}>
           <View>
-            <Text style={{ fontWeight: 'bold', color: selections[index] ? '#edefee' : '#495e57' }}>
-              {section.charAt(0).toUpperCase() + section.slice(1)}
+            <Text style={[styles.buttonText, getTextStyle(selections[index])]}>
+              {section.charAt(0).toUpperCase() + section.slice(1)} 
             </Text>
           </View>
         </TouchableOpacity>
@@ -36,6 +38,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     paddingLeft: 15,
+  },
+  button: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 9,
+    marginRight: 15,
+  },
+  buttonText: {
+    fontWeight: 'bold',
   },
 });
 
