@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 9,
-    marginRight: 15,
+    padding: 12,
+    borderRadius: 20,
+    marginRight: 10,
   },
   buttonText: {
     fontWeight: 'bold',

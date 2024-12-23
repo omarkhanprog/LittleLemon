@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   delivery: {
     fontSize: 22,
     fontWeight: 'bold',
-    padding: 15,
+    padding: 10,
   },
 });
 
